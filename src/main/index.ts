@@ -164,7 +164,7 @@ export class ShimoExporter {
           await this.downloadFile(file, dir);
         }
       } catch (error) {
-        this.logger.error(`文档导出失败：【${file.name}】`);
+        this.logger.error(`文档导出失败：【${join(dir, file.name)}】`);
       }
     }
   }
