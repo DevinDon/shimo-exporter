@@ -28,6 +28,13 @@ export class ShimoExporter {
       path: string
     }
   ) {
+    this.axios.interceptors.request.use(
+      request => {
+        request.headers.cookie = config.cookie;
+        request.headers.referer = 'https://shimo.im/folder/123123';
+        return request;
+      }
+    );
     this.axios.interceptors.response.use(response => response.data);
   }
 
@@ -37,19 +44,10 @@ export class ShimoExporter {
     this.logger.error(3);
   }
 
-  getFiles(folder: string): Promise<ShimoFile[]> {
+  async getFileList(folder: string): Promise<ShimoFile[]> {
     return this.axios.get(
       ShimoExporter.url.files,
-      {
-        params: {
-          collaboratorCount: true,
-          folder
-        },
-        headers: {
-          cookie: this.config.cookie,
-          referer: 'https://shimo.im/folder/123123'
-        }
-      }
+      { params: { collaboratorCount: true, folder } }
     );
   }
 
@@ -57,13 +55,7 @@ export class ShimoExporter {
     return this.axios
       .get<any, any>(
         ShimoExporter.url.files + guid,
-        {
-          params: { contentUrl: true },
-          headers: {
-            cookie: this.config.cookie,
-            referer: 'https://shimo.im/folder/123123'
-          }
-        },
+        { params: { contentUrl: true } }
       )
       .then(data => data.contentUrl);
   }
@@ -79,10 +71,6 @@ export class ShimoExporter {
             file: guid,
             returnJson: 1,
             name: encodeURIComponent(name)
-          },
-          headers: {
-            cookie: this.config.cookie,
-            referer: 'https://shimo.im/folder/123123'
           }
         }
       )
@@ -90,15 +78,15 @@ export class ShimoExporter {
   }
 
   async exportBoard(file: ShimoFile, dir: string) {
-    this.logger.warn(`石墨白板无法导出：【${file.name}】`);
+    this.logger.warn(`石墨白板无法导出：【${join(dir, file.name)}】`);
   }
 
   async exportForm(file: ShimoFile, dir: string) {
-    this.logger.warn(`石墨表单无法导出：【${file.name}】`);
+    this.logger.warn(`石墨表单无法导出：【${join(dir, file.name)}】`);
   }
 
   async exportMindMap(file: ShimoFile, dir: string) {
-    this.logger.info(`思维导图导出中：【${file.name}】`);
+    this.logger.info(`思维导图导出中：【${join(dir, file.name)}】`);
     const cdn = await this.getContentURL(file.guid);
     return download(
       `${ShimoExporter.url.api}${file.type}/exports?url=${encodeURIComponent(cdn)}&format=xmind&name=${encodeURIComponent(file.name)}`,
@@ -109,30 +97,30 @@ export class ShimoExporter {
   }
 
   async exportSlide(file: ShimoFile, dir: string) {
-    this.logger.info(`幻灯片导出中：【${file.name}】`);
+    this.logger.info(`幻灯片导出中：【${join(dir, file.name)}】`);
     return download(await this.getExportURL(file, 'pptx'), dir);
     // https://xxport.shimo.im/files/wV3VVN74rZs8VJ3y/export?type=pptx&file=wV3VVN74rZs8VJ3y&returnJson=1&name=%E6%97%A0%E6%A0%87%E9%A2%98
   }
 
   async exportSheet(file: ShimoFile, dir: string) {
-    this.logger.info(`表格导出中：【${file.name}】`);
+    this.logger.info(`表格导出中：【${join(dir, file.name)}】`);
     return download(await this.getExportURL(file, 'xlsx'), dir);
     // https://xxport.shimo.im/files/1d3aVWr6BeU8pQqg/export?type=xlsx&file=1d3aVWr6BeU8pQqg&returnJson=1&name=%E6%97%A0%E6%A0%87%E9%A2%98
   }
 
   async exportDoc(file: ShimoFile, dir: string) {
-    this.logger.info(`Office 文档导出中：【${file.name}】`);
+    this.logger.info(`Office 文档导出中：【${join(dir, file.name)}】`);
     return download(await this.getExportURL(file, 'docx'), dir);
     // https://xxport.shimo.im/files/loqeWmz7wYFxOyAn/export?type=docx&file=loqeWmz7wYFxOyAn&returnJson=1&name=%E6%97%A0%E6%A0%87%E9%A2%98
   }
 
   async exportNewDoc(file: ShimoFile, dir: string) {
-    this.logger.info(`MarkDown 文档导出中：【${file.name}】`);
+    this.logger.info(`MarkDown 文档导出中：【${join(dir, file.name)}】`);
     return download(await this.getExportURL(file, 'md'), dir);
   }
 
   async exportDownload(file: ShimoFile, dir: string) {
-    this.logger.info(`原始类型文档下载中：【${file.name}】`);
+    this.logger.info(`原始类型文档下载中：【${join(dir, file.name)}】`);
     return download(file.downloadUrl, dir, {
       headers: {
         cookie: this.config.cookie,
@@ -142,7 +130,7 @@ export class ShimoExporter {
   }
 
   async exportUnknown(file: ShimoFile, dir: string) {
-    this.logger.info(`未知类型文档下载中：【${file.name}】`);
+    this.logger.info(`未知类型文档下载中：【${join(dir, file.name)}】`);
     return download(file.downloadUrl, dir, {
       headers: {
         cookie: this.config.cookie,
@@ -153,7 +141,7 @@ export class ShimoExporter {
   }
 
   async downloadFolder(folder: string, dir: string = this.config.path) {
-    const list: ShimoFile[] = await this.getFiles(folder);
+    const list: ShimoFile[] = await this.getFileList(folder);
     for (const file of list) {
       await new Promise(resolve => setTimeout(resolve, 1000));
       try {
