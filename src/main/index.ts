@@ -23,7 +23,7 @@ export class ShimoExporter {
   private axios: AxiosInstance = Axios.create();
 
   constructor(
-    private option: {
+    private config: {
       cookie: string,
       path: string
     }
@@ -46,8 +46,8 @@ export class ShimoExporter {
           folder
         },
         headers: {
-          cookie: this.option.cookie,
-          referer: 'https://shimo.im/folder/VMAPVjMrKmTmQjqg'
+          cookie: this.config.cookie,
+          referer: 'https://shimo.im/folder/123123'
         }
       }
     );
@@ -60,8 +60,8 @@ export class ShimoExporter {
         {
           params: { contentUrl: true },
           headers: {
-            cookie: this.option.cookie,
-            referer: 'https://shimo.im/folder/VMAPVjMrKmTmQjqg'
+            cookie: this.config.cookie,
+            referer: 'https://shimo.im/folder/123123'
           }
         },
       )
@@ -81,8 +81,8 @@ export class ShimoExporter {
             name: encodeURIComponent(name)
           },
           headers: {
-            cookie: this.option.cookie,
-            referer: 'https://shimo.im/folder/VMAPVjMrKmTmQjqg'
+            cookie: this.config.cookie,
+            referer: 'https://shimo.im/folder/123123'
           }
         }
       )
@@ -135,8 +135,8 @@ export class ShimoExporter {
     this.logger.info(`原始类型文档下载中：【${file.name}】`);
     return download(file.downloadUrl, dir, {
       headers: {
-        cookie: this.option.cookie,
-        referer: 'https://shimo.im/folder/VMAPVjMrKmTmQjqg'
+        cookie: this.config.cookie,
+        referer: 'https://shimo.im/folder/123123'
       }
     });
   }
@@ -145,53 +145,58 @@ export class ShimoExporter {
     this.logger.info(`未知类型文档下载中：【${file.name}】`);
     return download(file.downloadUrl, dir, {
       headers: {
-        cookie: this.option.cookie,
-        referer: 'https://shimo.im/folder/VMAPVjMrKmTmQjqg'
+        cookie: this.config.cookie,
+        referer: 'https://shimo.im/folder/123123'
       }
     });
     // .replace(/[\'\"\\\/\b\f\n\r\t]/g, '_')
   }
 
-  async downloadFolder(folder: string, dir: string = this.option.path) {
+  async downloadFolder(folder: string, dir: string = this.config.path) {
     const list: ShimoFile[] = await this.getFiles(folder);
     for (const file of list) {
       await new Promise(resolve => setTimeout(resolve, 1000));
       try {
-        switch (file.type) {
-          case 'board':
-            await this.exportBoard(file, dir);
-            break;
-          case 'form':
-            await this.exportForm(file, dir);
-            break;
-          case 'mindmap':
-            await this.exportMindMap(file, dir);
-            break;
-          case 'slide':
-            await this.exportSlide(file, dir);
-            break;
-          case 'mosheet':
-            await this.exportSheet(file, dir);
-            break;
-          case 'modoc':
-            await this.exportDoc(file, dir);
-            break;
-          case 'newdoc':
-            await this.exportNewDoc(file, dir);
-            break;
-          case 'xls':
-            await this.exportDownload(file, dir);
-            break;
-          case 'folder':
-            await this.downloadFolder(file.guid, join(dir, file.name));
-            break;
-          default:
-            await this.exportUnknown(file, dir);
-            break;
+        if (file.isFolder) {
+          this.downloadFolder(file.guid, join(dir, file.name));
+        } else {
+          this.downloadFile(file, dir);
         }
       } catch (error) {
         this.logger.error(`文档导出失败：【${file.name}】`);
       }
+    }
+  }
+
+  async downloadFile(file: ShimoFile, dir: string) {
+    switch (file.type) {
+      case 'board':
+        await this.exportBoard(file, dir);
+        break;
+      case 'form':
+        await this.exportForm(file, dir);
+        break;
+      case 'mindmap':
+        await this.exportMindMap(file, dir);
+        break;
+      case 'slide':
+        await this.exportSlide(file, dir);
+        break;
+      case 'mosheet':
+        await this.exportSheet(file, dir);
+        break;
+      case 'modoc':
+        await this.exportDoc(file, dir);
+        break;
+      case 'newdoc':
+        await this.exportNewDoc(file, dir);
+        break;
+      case 'xls':
+        await this.exportDownload(file, dir);
+        break;
+      default:
+        await this.exportUnknown(file, dir);
+        break;
     }
   }
 
