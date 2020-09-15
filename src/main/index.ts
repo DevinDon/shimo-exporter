@@ -159,9 +159,9 @@ export class ShimoExporter {
       await new Promise(resolve => setTimeout(resolve, 1000));
       try {
         if (file.isFolder) {
-          this.downloadFolder(file.guid, dir);
+          await this.downloadFolder(file.guid, dir);
         } else {
-          this.downloadFile(file, dir);
+          await this.downloadFile(file, dir);
         }
       } catch (error) {
         this.logger.error(`文档导出失败：【${file.name}】`);
