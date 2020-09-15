@@ -1,7 +1,7 @@
 import { Logger } from '@iinfinity/logger';
 import Axios, { AxiosInstance } from 'axios';
 import * as download from 'download';
-import { readFileSync } from 'fs';
+import { mkdir, readFileSync } from 'fs';
 import { join } from 'path';
 import { ShimoFile } from './@types';
 
@@ -28,6 +28,7 @@ export class ShimoExporter {
       path: string
     }
   ) {
+    mkdir('log', () => { });
     this.axios.interceptors.request.use(
       request => {
         request.headers.cookie = config.cookie;
@@ -38,10 +39,20 @@ export class ShimoExporter {
     this.axios.interceptors.response.use(response => response.data);
   }
 
-  test() {
+  async test() {
+    const result = await this.getFolderInfo('WlArzBMLPafgXOA2');
     this.logger.info(1);
     this.logger.warn(2);
     this.logger.error(3);
+  }
+
+  async getFolderInfo(folder: string): Promise<ShimoFile> {
+    return this.axios
+      .get(
+        `${ShimoExporter.url.files}${folder}`,
+        { params: { collaboratorCount: true } }
+      );
+    // https://shimo.im/lizard-api/files/5xkGMmrmmefKYV3X?collaboratorCount=true
   }
 
   async getFileList(folder: string): Promise<ShimoFile[]> {
@@ -142,11 +153,13 @@ export class ShimoExporter {
 
   async downloadFolder(folder: string, dir: string = this.config.path) {
     const list: ShimoFile[] = await this.getFileList(folder);
+    const { name } = await this.getFolderInfo(folder);
+    dir = join(dir, name);
     for (const file of list) {
       await new Promise(resolve => setTimeout(resolve, 1000));
       try {
         if (file.isFolder) {
-          this.downloadFolder(file.guid, join(dir, file.name));
+          this.downloadFolder(file.guid, dir);
         } else {
           this.downloadFile(file, dir);
         }
