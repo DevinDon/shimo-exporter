@@ -1,4 +1,5 @@
 const path = require('path');
+const webpack = require('webpack');
 
 function _externals() {
   let manifest = require('./package.json');
@@ -43,7 +44,7 @@ module.exports = {
   },
   target: 'node',
   externals,
-  // plugins: [
-  //   new webpack.optimize.UglifyJsPlugin()
-  // ]
+  plugins: [
+    new webpack.IgnorePlugin(/^electron$/)
+  ]
 };
