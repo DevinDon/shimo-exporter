@@ -13,13 +13,7 @@ export class ShimoExporter {
     export: 'https://xxport.shimo.im/files/'
   };
 
-  private logger: Logger = new Logger({
-    name: 'shimo',
-    stdout: process.stdout,
-    stderr: process.stderr,
-    fileout: join('log', 'shimo.log'),
-    fileerr: join('log', 'shimo.error.log'),
-  });
+  private logger: Logger;
   private axios: AxiosInstance = Axios.create();
   private retries: { [index: string]: number } = {};
 
@@ -30,6 +24,13 @@ export class ShimoExporter {
     }
   ) {
     existsSync('log') || mkdirSync('log');
+    this.logger = new Logger({
+      name: 'shimo',
+      stdout: process.stdout,
+      stderr: process.stderr,
+      fileout: join('log', 'shimo.log'),
+      fileerr: join('log', 'shimo.error.log'),
+    });
     this.axios.interceptors.request.use(
       request => {
         request.headers.cookie = config.cookie;
@@ -184,7 +185,7 @@ export class ShimoExporter {
     for (const file of list) {
       await new Promise(resolve => setTimeout(resolve, 1000));
       if (file.isFolder) {
-        await this.downloadFolder(file.guid, dist);
+        this.downloadFolder(file.guid, dist);
       } else {
         await this.downloadFile(file, dist);
       }
