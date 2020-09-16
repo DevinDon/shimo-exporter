@@ -71,7 +71,7 @@ export class ShimoExporter {
       .then(data => data.contentUrl);
   }
 
-  async getExportURL({ guid, name }: ShimoFile, type: string): Promise<string> {
+  async getExportURL({ guid, name, type }: Pick<ShimoFile, 'guid' | 'name'> & { type: string }): Promise<string> {
 
     return this.axios
       .get(
@@ -88,6 +88,22 @@ export class ShimoExporter {
       .then((data: any) => data.redirectUrl);
   }
 
+  async download(
+    { url, dir }: { url: string, dir: string }
+  ) {
+    return download(
+      url,
+      dir,
+      {
+        timeout: 30 * 1000, // 30s timeout
+        headers: {
+          cookie: this.config.cookie,
+          referer: 'https://shimo.im/folder/123123'
+        }
+      }
+    );
+  }
+
   async exportBoard(file: ShimoFile, dir: string) {
     this.logger.warn(`石墨白板无法导出：【${join(dir, file.name)}】`);
   }
@@ -99,54 +115,62 @@ export class ShimoExporter {
   async exportMindMap(file: ShimoFile, dir: string) {
     this.logger.info(`思维导图导出中：【${join(dir, file.name)}】`);
     const cdn = await this.getContentURL(file.guid);
-    return download(
-      `${ShimoExporter.url.api}${file.type}/exports?url=${encodeURIComponent(cdn)}&format=xmind&name=${encodeURIComponent(file.name)}`,
+    return this.download({
+      url: `${ShimoExporter.url.api}${file.type}/exports?url=${encodeURIComponent(cdn)}&format=xmind&name=${encodeURIComponent(file.name)}`,
       dir
-    );
+    });
     // https://shimo.im/lizard-api/files/R13j8r1gOjUMQJk5?contentUrl=true
     // https://shimo.im/api/mindmap/exports?url=https%3A%2F%2Ffile-contents-23456789.oss-cn-beijing.aliyuncs.com%2FR13j8r1gOjUMQJk5%3FOSSAccessKeyId%3DLTAI4FoEPTasjWkqu1meFaHK%26Expires%3D1600149182%26Signature%3DXqSWO4bsREwnI0dz3OnvCxQrbaY%253D&format=xmind&name=%E6%97%A0%E6%A0%87%E9%A2%98
   }
 
   async exportSlide(file: ShimoFile, dir: string) {
     this.logger.info(`幻灯片导出中：【${join(dir, file.name)}】`);
-    return download(await this.getExportURL(file, 'pptx'), dir);
+    return this.download({
+      url: await this.getExportURL({ guid: file.guid, name: file.name, type: 'pptx' }),
+      dir
+    });
     // https://xxport.shimo.im/files/wV3VVN74rZs8VJ3y/export?type=pptx&file=wV3VVN74rZs8VJ3y&returnJson=1&name=%E6%97%A0%E6%A0%87%E9%A2%98
   }
 
   async exportSheet(file: ShimoFile, dir: string) {
     this.logger.info(`表格导出中：【${join(dir, file.name)}】`);
-    return download(await this.getExportURL(file, 'xlsx'), dir);
+    return this.download({
+      url: await this.getExportURL({ guid: file.guid, name: file.name, type: 'xlsx' }),
+      dir
+    });
     // https://xxport.shimo.im/files/1d3aVWr6BeU8pQqg/export?type=xlsx&file=1d3aVWr6BeU8pQqg&returnJson=1&name=%E6%97%A0%E6%A0%87%E9%A2%98
   }
 
   async exportDoc(file: ShimoFile, dir: string) {
     this.logger.info(`Office 文档导出中：【${join(dir, file.name)}】`);
-    return download(await this.getExportURL(file, 'docx'), dir);
+    return this.download({
+      url: await this.getExportURL({ guid: file.guid, name: file.name, type: 'docx' }),
+      dir
+    });
     // https://xxport.shimo.im/files/loqeWmz7wYFxOyAn/export?type=docx&file=loqeWmz7wYFxOyAn&returnJson=1&name=%E6%97%A0%E6%A0%87%E9%A2%98
   }
 
   async exportNewDoc(file: ShimoFile, dir: string) {
     this.logger.info(`MarkDown 文档导出中：【${join(dir, file.name)}】`);
-    return download(await this.getExportURL(file, 'md'), dir);
+    return this.download({
+      url: await this.getExportURL({ guid: file.guid, name: file.name, type: 'md' }),
+      dir
+    });
   }
 
   async exportDownload(file: ShimoFile, dir: string) {
     this.logger.info(`原始类型文档下载中：【${join(dir, file.name)}】`);
-    return download(file.downloadUrl, dir, {
-      headers: {
-        cookie: this.config.cookie,
-        referer: 'https://shimo.im/folder/123123'
-      }
+    return this.download({
+      url: file.downloadUrl,
+      dir
     });
   }
 
   async exportUnknown(file: ShimoFile, dir: string) {
     this.logger.info(`未知类型文档下载中：【${join(dir, file.name)}】`);
-    return download(file.downloadUrl, dir, {
-      headers: {
-        cookie: this.config.cookie,
-        referer: 'https://shimo.im/folder/123123'
-      }
+    return this.download({
+      url: file.downloadUrl,
+      dir
     });
     // .replace(/[\'\"\\\/\b\f\n\r\t]/g, '_')
   }
