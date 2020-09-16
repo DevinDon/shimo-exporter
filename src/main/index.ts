@@ -14,7 +14,7 @@ export class ShimoExporter {
   };
 
   private logger: Logger;
-  private axios: AxiosInstance = Axios.create();
+  private axios: AxiosInstance = Axios.create({ timeout: 30 * 1000 });
   private retries: { [index: string]: number } = {};
 
   constructor(
@@ -28,8 +28,8 @@ export class ShimoExporter {
       name: 'shimo',
       stdout: process.stdout,
       stderr: process.stderr,
-      fileout: join('log', 'shimo.log'),
-      fileerr: join('log', 'shimo.error.log'),
+      fileout: join('log', `shimo.${Date.now()}.log`),
+      fileerr: join('log', `shimo.${Date.now()}.error.log`),
     });
     this.axios.interceptors.request.use(
       request => {
@@ -39,13 +39,6 @@ export class ShimoExporter {
       }
     );
     this.axios.interceptors.response.use(response => response.data);
-  }
-
-  async test() {
-    const result = await this.getFolderInfo('WlArzBMLPafgXOA2');
-    this.logger.info(1);
-    this.logger.warn(2);
-    this.logger.error(3);
   }
 
   async getFolderInfo(folder: string): Promise<ShimoFile> {
@@ -187,7 +180,7 @@ export class ShimoExporter {
       if (file.isFolder) {
         this.downloadFolder(file.guid, dist);
       } else {
-        await this.downloadFile(file, dist);
+        this.downloadFile(file, dist);
       }
     }
 
