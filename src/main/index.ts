@@ -242,4 +242,6 @@ const config = JSON.parse(readFileSync('config.json').toString());
 
 const exporter = new ShimoExporter(config);
 
-exporter.downloadFolder(config.folder);
+for (const folder of config.folders) {
+  exporter.downloadFolder(folder);
+}
