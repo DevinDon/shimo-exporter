@@ -34,7 +34,7 @@
   "private": true,
   "dependencies": {
     "@iinfinity/logger": "^0.3.4",
-    "axios": "^0.20.0",
+    "axios": "^0.21.1",
     "download": "^8.0.0"
   },
   "devDependencies": {
